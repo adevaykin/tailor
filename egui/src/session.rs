@@ -3,22 +3,26 @@ use egui::Color32;
 use regex::Regex;
 
 pub struct Colors {
-    foreground: [f32; 3],
-    background: [f32; 3],
+    foreground: [u8; 3],
+    background: [u8; 3],
 }
 
 impl Default for Colors {
     fn default() -> Self {
         Self {
-            foreground: [0.0, 0.0, 0.0],
-            background: [1.0, 1.0, 1.0],
+            foreground: [0, 0, 0],
+            background: [1, 1, 1],
         }
     }
 }
 
 impl Colors {
     pub fn foreground(&self) -> Color32 {
-        
+        Color32::from_rgb(self.foreground[0], self.foreground[1], self.foreground[2])
+    }
+
+    pub fn background(&self) -> Color32 {
+        Color32::from_rgb(self.background[0], self.background[1], self.background[2])
     }
 }
 
@@ -55,10 +59,10 @@ impl Default for Session {
             path: PathBuf::new(),
             colors: Colors::default(),
             highlights: vec![
-                Highlight::new(String::from("ERROR"), Colors{ foreground: [1.0, 0.0, 0.0], background: [0.0, 0.0, 0.0] }).unwrap(),
-                Highlight::new(String::from("WARN"), Colors{ foreground: [1.0, 1.0, 0.0], background: [0.0, 0.0, 0.0] }).unwrap(),
-                Highlight::new(String::from("DEBUG"), Colors{ foreground: [0.0, 1.0, 0.0], background: [0.0, 0.0, 0.0] }).unwrap(),
-                Highlight::new(String::from("INFO"), Colors{ foreground: [0.0, 0.0, 1.0], background: [0.0, 0.0, 0.0] }).unwrap(),
+                Highlight::new(String::from("ERROR"), Colors{ foreground: [1, 0, 0], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("WARN"), Colors{ foreground: [1, 1, 0], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("DEBUG"), Colors{ foreground: [0, 1, 0], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("INFO"), Colors{ foreground: [0, 0, 1], background: [0, 0, 0] }).unwrap(),
             ],
         }
     }
@@ -70,10 +74,10 @@ impl Session {
             path,
             colors: Colors::default(),
             highlights: vec![
-                Highlight::new(String::from("ERROR"), Colors{ foreground: [1.0, 0.0, 0.0], background: [0.0, 0.0, 0.0] }).unwrap(),
-                Highlight::new(String::from("WARN"), Colors{ foreground: [1.0, 1.0, 0.0], background: [0.0, 0.0, 0.0] }).unwrap(),
-                Highlight::new(String::from("DEBUG"), Colors{ foreground: [0.0, 1.0, 0.0], background: [0.0, 0.0, 0.0] }).unwrap(),
-                Highlight::new(String::from("INFO"), Colors{ foreground: [0.0, 0.0, 1.0], background: [0.0, 0.0, 0.0] }).unwrap(),
+                Highlight::new(String::from("ERROR"), Colors{ foreground: [1, 0, 0], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("WARN"), Colors{ foreground: [1, 1, 0], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("DEBUG"), Colors{ foreground: [0, 1, 0], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("INFO"), Colors{ foreground: [0, 0, 1], background: [0, 0, 0] }).unwrap(),
             ],
         }
     }

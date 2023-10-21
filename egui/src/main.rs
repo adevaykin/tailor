@@ -152,15 +152,10 @@ impl App for TailorApp {
             egui::ScrollArea::both().show_rows(ui, 12.0, self.lines.len(),
    |ui, row_range| {
                     for row in row_range {
-                        let color = Color32::from_rgb(
-                            self.session.get_colors(&self.lines[row]).foreground[0],
-                            self.session.get_colors(&self.lines[row]).foreground[1],
-                            self.session.get_colors(&self.lines[row]).foreground[2],
-                        );
                         let layout_job = LayoutJob::simple(
                             self.lines[row].clone(),
                             FontId::monospace(12.0),
-                            Color32::from_rgb(self.session.get_colors(&self.lines[row]).foreground),
+                            self.session.get_colors(&self.lines[row]).foreground(),
                             0.0);
                         let line_label = Label::new(layout_job).wrap(false);
                         ui.add(line_label);
