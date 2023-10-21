@@ -33,7 +33,7 @@ pub struct Highlight {
 
 impl Highlight {
     pub fn new(pattern: String, colors: Colors) -> Result<Self, String> {
-        if let Ok(pattern) = Regex::new(format!("({})", pattern).as_str()) {
+        if let Ok(pattern) = Regex::new(format!("{}", pattern).as_str()) {
             return Ok(Self {
                 pattern,
                 colors,
@@ -59,10 +59,10 @@ impl Default for Session {
             path: PathBuf::new(),
             colors: Colors::default(),
             highlights: vec![
-                Highlight::new(String::from("ERROR"), Colors{ foreground: [1, 0, 0], background: [0, 0, 0] }).unwrap(),
-                Highlight::new(String::from("WARN"), Colors{ foreground: [1, 1, 0], background: [0, 0, 0] }).unwrap(),
-                Highlight::new(String::from("DEBUG"), Colors{ foreground: [0, 1, 0], background: [0, 0, 0] }).unwrap(),
-                Highlight::new(String::from("INFO"), Colors{ foreground: [0, 0, 1], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("ERROR"), Colors{ foreground: [255, 0, 0], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("WARN"), Colors{ foreground: [255, 255, 0], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("DEBUG"), Colors{ foreground: [0, 255, 0], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("INFO"), Colors{ foreground: [0, 0, 255], background: [0, 0, 0] }).unwrap(),
             ],
         }
     }
@@ -74,15 +74,15 @@ impl Session {
             path,
             colors: Colors::default(),
             highlights: vec![
-                Highlight::new(String::from("ERROR"), Colors{ foreground: [1, 0, 0], background: [0, 0, 0] }).unwrap(),
-                Highlight::new(String::from("WARN"), Colors{ foreground: [1, 1, 0], background: [0, 0, 0] }).unwrap(),
-                Highlight::new(String::from("DEBUG"), Colors{ foreground: [0, 1, 0], background: [0, 0, 0] }).unwrap(),
-                Highlight::new(String::from("INFO"), Colors{ foreground: [0, 0, 1], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("ERROR"), Colors{ foreground: [255, 0, 0], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("WARN"), Colors{ foreground: [255, 255, 0], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("DEBUG"), Colors{ foreground: [0, 255, 0], background: [0, 0, 0] }).unwrap(),
+                Highlight::new(String::from("INFO"), Colors{ foreground: [0, 0, 255], background: [0, 0, 0] }).unwrap(),
             ],
         }
     }
 
-    pub fn get_colors(&self, line: &String) -> &Colors {
+    pub fn get_highlight(&self, line: &String) -> &Colors {
         for highlight in &self.highlights {
             if highlight.is_matching(line) {
                 return &highlight.colors;
