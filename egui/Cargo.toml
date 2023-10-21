@@ -1,0 +1,14 @@
+[package]
+name = "tailor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+libtailor =  { path = "../Core" }
+eframe = "0.23.0"
+egui = "0.23.0"
+egui_file = "0.11.0"
+env_logger = "0.10.0"
+simplelog = "0.12.1"
+log = "0.4.20"
+regex = "1.9.5"

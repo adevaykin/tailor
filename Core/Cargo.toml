@@ -1,0 +1,14 @@
+[package]
+name = "libtailor"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "tailor"
+crate-type = ["staticlib", "dylib"]
+
+[dependencies]
+notify = "5.0.0"
+log = "0.4.14"
+simplelog = "0.12.0"
+log-panics = "2.0.0"
