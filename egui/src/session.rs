@@ -1,4 +1,8 @@
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
+use app_dirs2::{AppDataType, get_app_root};
+use crate::APP_INFO;
 use crate::highlight::{Colors, Highlight};
 
 fn default_highlights() -> Vec<Highlight> {
@@ -28,11 +32,25 @@ impl Default for Session {
 
 impl Session {
     pub fn new(path: PathBuf) -> Self {
+        Self::try_load(&path);
         Self {
             path,
             colors: Colors::default(),
             highlights: default_highlights(),
         }
+    }
+
+    fn try_load(path: &PathBuf) {
+        if let Ok(data_path) = get_app_root(AppDataType::UserData, &APP_INFO) {
+            let mut hasher = DefaultHasher::new();
+            path.hash(&mut hasher);
+            let h = hasher.finish();
+            log::info!("Hash: {:?}", h);
+        }
+    }
+
+    pub fn get_path(&self) -> &PathBuf {
+        &self.path
     }
 
     pub fn get_colors(&mut self) -> &mut Colors {

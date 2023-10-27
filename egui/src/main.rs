@@ -5,6 +5,10 @@ mod panels;
 mod session;
 mod highlight;
 
+use app_dirs2::*; // or app_dirs::* if you've used package alias in Cargo.toml
+
+const APP_INFO: AppInfo = AppInfo{name: "Tailor", author: "Alexander Devaikin"};
+
 use tailor::{Tailor, Message};
 use windows::Windows;
 use std::path::PathBuf;
@@ -41,7 +45,7 @@ impl TailorApp {
             is_dirty: false,
             open_file_dialog: None,
             current_file: String::new(),
-            recents: vec![String::from("Test 1"), String::from("Test 2"), String::from("Test 3")],
+            recents: TailorApp::try_load_recent(),
             next_open_file: None,
             tailor,
             message_rx: None,
@@ -51,6 +55,30 @@ impl TailorApp {
         };
 
         ret
+    }
+
+    fn try_load_recent() -> Vec<String> {
+        if let Ok(data_path) = get_app_root(AppDataType::UserData, &APP_INFO) {
+            if data_path.exists() {
+                let recents_path = data_path.join("recent.json");
+                if let Ok(loaded_recents) = std::fs::read_to_string(&recents_path)
+                {
+                    if let Ok(recents) = serde_json::from_str(&loaded_recents) {
+                        return recents;
+                    }
+                } else {
+                    let recents: Vec<String> = vec![];
+                    let recents_json = serde_json::to_string(&recents).unwrap();
+                    let _ = std::fs::write(&recents_path, recents_json);
+                }
+            }
+        }
+
+        vec![]
+    }
+
+    fn update_recents(&mut self) {
+        
     }
 }
 
@@ -101,7 +129,7 @@ impl App for TailorApp {
                 }
 
                 ComboBox::from_label("Recent")
-                    .selected_text(format!("{}", "test"))
+                    .selected_text(format!("{}", self.session.get_path().display()))
                     .show_ui(ui, |ui| {
                         for recent in &self.recents {
                             ui.selectable_value(&mut self.current_file, recent.clone(), recent);
@@ -161,8 +189,17 @@ impl App for TailorApp {
     }
 }
 
+fn init_data_path() {
+    if let Ok(data_path) = get_app_root(AppDataType::UserData, &APP_INFO) {
+        if !data_path.exists() && std::fs::create_dir_all(&data_path).is_err() {
+            log::warn!("Unable to create data path: {:?}. Settings and sessions will not be persisted.", data_path);
+        }
+    }
+}
+
 fn main() {
     env_logger::init();
+    init_data_path();
 
     match Tailor::new() {
         Ok(tailor) => {
