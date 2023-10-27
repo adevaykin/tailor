@@ -147,7 +147,7 @@ impl App for TailorApp {
         });
 
         CentralPanel::default().show(ctx, |ui| {
-            self.panels.draw(ui);
+            self.panels.draw(ui, &mut self.session);
 
             egui::ScrollArea::both().show_rows(ui, 12.0, self.lines.len(),
    |ui, row_range| {

@@ -1,4 +1,5 @@
 use egui::Ui;
+use crate::session::Session;
 
 pub mod session_settings;
 
@@ -8,7 +9,7 @@ pub struct Panels {
 }
 
 impl Panels {
-    pub fn draw(&mut self, ui: &mut Ui) {
-        self.session_settings.show(ui);
+    pub fn draw(&mut self, ui: &mut Ui, session: &mut Session) {
+        self.session_settings.show(ui, session );
     }
 }

@@ -1,5 +1,6 @@
 use egui::color_picker::color_edit_button_rgb;
-use egui::Ui;
+use egui::{TextEdit, Ui};
+use crate::session::Session;
 
 #[derive(Default)]
 pub struct SessionSettingsPanel {
@@ -15,7 +16,7 @@ impl SessionSettingsPanel {
         self.is_visible
     }
 
-    pub fn show(&mut self, ui: &mut Ui) {
+    pub fn show(&mut self, ui: &mut Ui, session: &mut Session) {
         if !self.is_visible {
             return;
         }
@@ -28,16 +29,25 @@ impl SessionSettingsPanel {
                 ui.vertical_centered(|ui| {
                     ui.heading("Session");
                 });
-                ui.vertical_centered(|ui| {
-                    ui.label("Colors");
+                ui.horizontal(|ui| {
+                    ui.label("Text:");
+                    color_edit_button_rgb(ui, &mut session.get_colors().foreground);
+                    ui.label("BackgroundS:");
+                    color_edit_button_rgb(ui, &mut session.get_colors().background);
                 });
-                ui.label("Default:");
-                egui::ScrollArea::vertical().show(ui, |ui| {
-
-                });
-                ui.label("Highlights:");
-                let mut color: [f32; 3] = [0.0; 3];
-                let picker = color_edit_button_rgb(ui, &mut color);
+                ui.separator();
+                for highlight in session.get_highlights() {
+                    ui.horizontal(|ui| {
+                        let pattern_edit = TextEdit::singleline(highlight.get_pattern())
+                            .hint_text("Regex Pattern")
+                            .desired_width(145.0);
+                        if ui.add(pattern_edit).changed() {
+                            highlight.update_regex().unwrap();
+                        }
+                        color_edit_button_rgb(ui, &mut highlight.get_colors().foreground);
+                        color_edit_button_rgb(ui, &mut highlight.get_colors().background);
+                    });
+                }
             });
     }
 }

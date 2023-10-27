@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
 use std::thread::JoinHandle;
 use std::time::Duration;
 use crate::{FileWatch, Message};
@@ -49,7 +49,8 @@ impl WatchClient for FileWatchClient {
                         log::error!("Failed to send new lines to owner.");
                     }
                 },
-                Err(_) => {
+                Err(RecvTimeoutError::Timeout) => {},
+                Err(RecvTimeoutError::Disconnected) => {
                     log::info!("FileWatchClient exited.")
                 }
             }
