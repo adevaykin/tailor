@@ -3,17 +3,18 @@
 mod windows;
 mod panels;
 mod session;
+mod highlight;
 
 use tailor::{Tailor, Message};
 use windows::Windows;
 use std::path::PathBuf;
 use std::sync::mpsc::{channel, Receiver};
 use eframe::{App, egui, Frame};
-use egui::{CentralPanel, Color32, ComboBox, Context, FontId, TopBottomPanel, Label, TextEdit, Button};
+use egui::{CentralPanel, ComboBox, Context, FontId, TopBottomPanel, Label, TextEdit, Button};
 use egui::text::LayoutJob;
 use egui_file::FileDialog;
 use crate::panels::Panels;
-use crate::session::{Highlight, Session};
+use crate::session::Session;
 
 struct TailorApp {
     panels: Panels,
@@ -50,22 +51,6 @@ impl TailorApp {
         };
 
         ret
-    }
-
-    fn get_line_color(highlights: &Vec<Highlight>, msg: &String) -> Color32 {
-        if msg.contains("DEBUG") || msg.contains("debug") {
-            return Color32::GREEN;
-        }
-
-        if msg.contains("WARNING") || msg.contains("WARN") || msg.contains("warning") {
-            return Color32::YELLOW;
-        }
-
-        if msg.contains("ERROR") || msg.contains("ERR") || msg.contains("error") || msg.contains("Error") {
-            return Color32::RED;
-        }
-
-        Color32::BLACK
     }
 }
 

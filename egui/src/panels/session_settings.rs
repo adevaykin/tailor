@@ -1,5 +1,6 @@
 use egui::color_picker::color_edit_button_rgb;
 use egui::{TextEdit, Ui};
+use crate::highlight::Highlight;
 use crate::session::Session;
 
 #[derive(Default)]
@@ -32,7 +33,7 @@ impl SessionSettingsPanel {
                 ui.horizontal(|ui| {
                     ui.label("Text:");
                     color_edit_button_rgb(ui, &mut session.get_colors().foreground);
-                    ui.label("BackgroundS:");
+                    ui.label("Backgrounds:");
                     color_edit_button_rgb(ui, &mut session.get_colors().background);
                 });
                 ui.separator();
@@ -44,9 +45,12 @@ impl SessionSettingsPanel {
                         if ui.add(pattern_edit).changed() {
                             highlight.update_regex().unwrap();
                         }
-                        color_edit_button_rgb(ui, &mut highlight.get_colors().foreground);
-                        color_edit_button_rgb(ui, &mut highlight.get_colors().background);
+                        color_edit_button_rgb(ui, &mut highlight.get_mut_colors().foreground);
+                        color_edit_button_rgb(ui, &mut highlight.get_mut_colors().background);
                     });
+                }
+                if ui.button("+").clicked() {
+                    session.get_highlights().push(Highlight::default());
                 }
             });
     }
