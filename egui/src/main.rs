@@ -8,59 +8,65 @@ mod highlight;
 use app_dirs2::*; // or app_dirs::* if you've used package alias in Cargo.toml
 
 const APP_INFO: AppInfo = AppInfo{name: "Tailor", author: "Alexander Devaikin"};
+const RECENTS_FILENAME: &str = "recents.json";
 
 use tailor::{Tailor, Message};
 use windows::Windows;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver};
 use eframe::{App, egui, Frame};
-use egui::{CentralPanel, ComboBox, Context, FontId, TopBottomPanel, Label, TextEdit, Button};
+use egui::{CentralPanel, ComboBox, Context, FontId, TopBottomPanel, Label, TextEdit, Button, InnerResponse};
 use egui::text::LayoutJob;
 use egui_file::FileDialog;
 use crate::panels::Panels;
 use crate::session::Session;
 
-struct TailorApp {
-    panels: Panels,
-    windows: Windows,
-    session: Session,
-    is_dirty: bool,
-    open_file_dialog: Option<FileDialog>,
-    current_file: String,
+struct RecentsBox {
     recents: Vec<String>,
-    next_open_file: Option<PathBuf>,
-    tailor: Tailor,
-    message_rx: Option<Receiver<Message>>,
-    lines: Vec<String>,
-    filter_text: String,
-    search_text: String,
+    selected_recent: String,
 }
 
-impl TailorApp {
-    fn new(tailor: Tailor) -> Self {
-        let ret = Self {
-            panels: Panels::default(),
-            windows: Windows::default(),
-            session: Session::default(),
-            is_dirty: false,
-            open_file_dialog: None,
-            current_file: String::new(),
-            recents: TailorApp::try_load_recent(),
-            next_open_file: None,
-            tailor,
-            message_rx: None,
-            lines: vec![],
-            filter_text: String::new(),
-            search_text: String::new(),
-        };
+impl Default for RecentsBox {
+    fn default() -> Self {
+        Self {
+            recents: Self::try_load_recent(),
+            selected_recent: String::new(),
+        }
+    }
+}
 
-        ret
+impl RecentsBox {
+    pub fn draw(&mut self, ui: &mut egui::Ui) {
+        ComboBox::from_label("Recent")
+            .selected_text(&self.selected_recent)
+            .width(300.0)
+            .show_ui(ui, |ui| {
+                for recent in &self.recents {
+                    ui.selectable_value(&mut self.selected_recent, recent.clone(), recent);
+                }
+            });
+    }
+
+    pub fn is_dirty(&self, prev_path: &Path) -> bool {
+        self.selected_recent != prev_path.display().to_string()
+    }
+
+    pub fn update_recents(&mut self, path: &Path) {
+        self.recents = self.recents.clone().into_iter().filter(|recent| *recent != path.display().to_string()).collect();
+        self.recents.insert(0, path.display().to_string());
+        self.recents.truncate(10);
+        self.selected_recent = path.display().to_string();
+        Self::try_save_recents(&self.recents);
+    }
+
+    pub fn get_selected_recent_path(&self) -> PathBuf {
+        PathBuf::from(&self.selected_recent)
     }
 
     fn try_load_recent() -> Vec<String> {
         if let Ok(data_path) = get_app_root(AppDataType::UserData, &APP_INFO) {
             if data_path.exists() {
-                let recents_path = data_path.join("recent.json");
+                let recents_path = data_path.join(RECENTS_FILENAME);
                 if let Ok(loaded_recents) = std::fs::read_to_string(&recents_path)
                 {
                     if let Ok(recents) = serde_json::from_str(&loaded_recents) {
@@ -77,8 +83,48 @@ impl TailorApp {
         vec![]
     }
 
-    fn update_recents(&mut self) {
-        
+    fn try_save_recents(recents: &Vec<String>) {
+        if let Ok(data_path) = get_app_root(AppDataType::UserData, &APP_INFO) {
+            let recents_path = data_path.join(RECENTS_FILENAME);
+            let recents_json = serde_json::to_string(recents).unwrap();
+            let _ = std::fs::write(&recents_path, recents_json);
+        }
+    }
+}
+
+struct TailorApp {
+    panels: Panels,
+    windows: Windows,
+    session: Session,
+    is_dirty: bool,
+    open_file_dialog: Option<FileDialog>,
+    recents_box: RecentsBox,
+    next_open_file: Option<PathBuf>,
+    tailor: Tailor,
+    message_rx: Option<Receiver<Message>>,
+    lines: Vec<String>,
+    filter_text: String,
+    search_text: String,
+}
+
+impl TailorApp {
+    fn new(tailor: Tailor) -> Self {
+        let ret = Self {
+            panels: Panels::default(),
+            windows: Windows::default(),
+            session: Session::default(),
+            is_dirty: false,
+            open_file_dialog: None,
+            recents_box: RecentsBox::default(),
+            next_open_file: None,
+            tailor,
+            message_rx: None,
+            lines: vec![],
+            filter_text: String::new(),
+            search_text: String::new(),
+        };
+
+        ret
     }
 }
 
@@ -91,11 +137,14 @@ impl App for TailorApp {
                 self.tailor.watch(path.clone(), tx);
                 self.lines.clear();
                 self.session = Session::new(path.clone());
-                if let Some(path_str) = path.to_str() {
-                    self.current_file = String::from(path_str);
-                }
+                self.recents_box.update_recents(path.as_path());
             }
             self.is_dirty = false;
+        }
+
+        if self.recents_box.is_dirty(self.session.get_path().as_path()) {
+            self.next_open_file = Some(self.recents_box.get_selected_recent_path());
+            self.is_dirty = true;
         }
 
         if let Some(message_rx) = self.message_rx.as_ref() {
@@ -128,13 +177,7 @@ impl App for TailorApp {
                     self.open_file_dialog = Some(dialog);
                 }
 
-                ComboBox::from_label("Recent")
-                    .selected_text(format!("{}", self.session.get_path().display()))
-                    .show_ui(ui, |ui| {
-                        for recent in &self.recents {
-                            ui.selectable_value(&mut self.current_file, recent.clone(), recent);
-                        }
-                    });
+                self.recents_box.draw(ui);
 
                 let session_settings_button = Button::new("🎨")
                     .selected(self.panels.session_settings.get_is_visible());
@@ -181,7 +224,7 @@ impl App for TailorApp {
 
         TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                ui.label(self.current_file.as_str());
+                ui.label(self.session.get_path().display().to_string());
                 ui.add(TextEdit::singleline(&mut self.filter_text).hint_text("Filter").desired_width(120.0));
                 ui.add(TextEdit::singleline(&mut self.search_text).hint_text("Search").desired_width(120.0));
             });
