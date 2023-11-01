@@ -1,6 +1,8 @@
 use egui::Color32;
 use regex::Regex;
+use serde::{Deserialize, Deserializer, Serialize};
 
+#[derive(Serialize,Deserialize)]
 pub struct Colors {
     pub foreground: [f32; 3],
     pub background: [f32; 3],
@@ -25,9 +27,41 @@ impl Colors {
     }
 }
 
+struct SerializableRegex {
+    regex: Regex,
+}
+
+impl SerializableRegex {
+    pub fn new(regex: Regex) -> Self {
+        Self {
+            regex,
+        }
+    }
+}
+
+impl Serialize for SerializableRegex {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where S: serde::Serializer {
+        serializer.serialize_str(&self.regex.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for SerializableRegex {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(Self {
+            regex: Regex::new(&s).unwrap(),
+        })
+    }
+}
+
+#[derive(Serialize,Deserialize)]
 pub struct Highlight {
     pattern: String,
-    regex: Regex,
+    regex: SerializableRegex,
     colors: Colors,
 }
 
@@ -35,7 +69,7 @@ impl Default for Highlight {
     fn default() -> Self {
         Self {
             pattern: String::from(""),
-            regex: Regex::new("").unwrap(),
+            regex: SerializableRegex::new(Regex::new("").unwrap()),
             colors: Colors::default(),
         }
     }
@@ -47,7 +81,7 @@ impl Highlight {
         if let Ok(regex) = Regex::new(format!("{}", pattern).as_str()) {
             return Ok(Self {
                 pattern,
-                regex,
+                regex: SerializableRegex::new(regex),
                 colors,
             });
         }
@@ -55,7 +89,7 @@ impl Highlight {
         Err("Failed to create Highlight".into())
     }
     pub fn is_matching(&self, line: &String) -> bool {
-        self.regex.is_match(line)
+        self.regex.regex.is_match(line)
     }
 
     pub fn get_mut_colors(&mut self) -> &mut Colors {
@@ -72,7 +106,7 @@ impl Highlight {
 
     pub fn update_regex(&mut self) -> Result<(), ()> {
         if let Ok(regex) = Regex::new(format!("{}", self.pattern).as_str()) {
-            self.regex = regex;
+            self.regex = SerializableRegex::new(regex);
             return Ok(());
         }
 
