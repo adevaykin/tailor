@@ -12,10 +12,10 @@ const APP_INFO: AppInfo = AppInfo{name: "Tailor", author: "Alexander Devaikin"};
 
 use tailor::{Tailor, Message};
 use windows::Windows;
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use std::sync::mpsc::{channel, Receiver};
 use eframe::{App, egui, Frame};
-use egui::{CentralPanel, ComboBox, Context, FontId, TopBottomPanel, Label, TextEdit, Button, InnerResponse};
+use egui::{CentralPanel, Context, FontId, TopBottomPanel, Label, TextEdit, Button};
 use egui::text::LayoutJob;
 use egui_file::FileDialog;
 use crate::panels::Panels;
@@ -39,7 +39,7 @@ struct TailorApp {
 
 impl TailorApp {
     fn new(tailor: Tailor) -> Self {
-        let ret = Self {
+        Self {
             panels: Panels::default(),
             windows: Windows::default(),
             session: Session::default(),
@@ -52,14 +52,12 @@ impl TailorApp {
             lines: vec![],
             filter_text: String::new(),
             search_text: String::new(),
-        };
-
-        ret
+        }
     }
 }
 
 impl App for TailorApp {
-    fn update(&mut self, ctx: &Context, frame: &mut Frame) {
+    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         if self.is_dirty {
             if let Some(path) = &self.next_open_file {
                 let (tx, rx) = channel();

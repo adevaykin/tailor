@@ -78,7 +78,7 @@ impl Default for Highlight {
 
 impl Highlight {
     pub fn new(pattern: String, colors: Colors) -> Result<Self, String> {
-        if let Ok(regex) = Regex::new(format!("{}", pattern).as_str()) {
+        if let Ok(regex) = Regex::new(pattern.as_str()) {
             return Ok(Self {
                 pattern,
                 regex: SerializableRegex::new(regex),
@@ -88,7 +88,7 @@ impl Highlight {
 
         Err("Failed to create Highlight".into())
     }
-    pub fn is_matching(&self, line: &String) -> bool {
+    pub fn is_matching(&self, line: &str) -> bool {
         self.regex.regex.is_match(line)
     }
 
@@ -105,7 +105,7 @@ impl Highlight {
     }
 
     pub fn update_regex(&mut self) -> Result<(), ()> {
-        if let Ok(regex) = Regex::new(format!("{}", self.pattern).as_str()) {
+        if let Ok(regex) = Regex::new(self.pattern.as_str()) {
             self.regex = SerializableRegex::new(regex);
             return Ok(());
         }

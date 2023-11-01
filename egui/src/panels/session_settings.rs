@@ -1,13 +1,11 @@
 use egui::color_picker::color_edit_button_rgb;
 use egui::{TextEdit, Ui};
-use crate::highlight::{Colors, Highlight};
+use crate::highlight::{Highlight};
 use crate::session::Session;
 
 #[derive(Default)]
 pub struct SessionSettingsPanel {
     is_visible: bool,
-    colors: Colors,
-    highlights: Vec<Highlight>,
 }
 
 impl SessionSettingsPanel {

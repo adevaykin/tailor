@@ -1,4 +1,4 @@
-use egui::{Align, Color32, Context, FontId};
+use egui::{Color32, Context, FontId};
 use egui::text::LayoutJob;
 
 #[derive(Default)]

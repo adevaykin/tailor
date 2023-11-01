@@ -78,7 +78,7 @@ impl Session {
 
     fn try_load(path: &PathBuf) -> Option<Session> {
         if let Ok(session_save_path) = Self::get_save_path(path) {
-            if let Ok(loaded_session_json) = std::fs::read_to_string(&session_save_path)
+            if let Ok(loaded_session_json) = std::fs::read_to_string(session_save_path)
             {
                 if let Ok(loaded_session) = serde_json::from_str(&loaded_session_json) {
                     return Some(loaded_session);
@@ -108,7 +108,7 @@ impl Session {
         &mut self.highlights
     }
 
-    pub fn get_highlight(&self, line: &String) -> &Colors {
+    pub fn get_highlight(&self, line: &str) -> &Colors {
         for highlight in &self.highlights {
             if highlight.is_matching(line) {
                 return highlight.get_colors();
