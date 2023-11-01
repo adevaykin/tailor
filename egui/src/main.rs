@@ -15,8 +15,8 @@ use windows::Windows;
 use std::path::{PathBuf};
 use std::sync::mpsc::{channel, Receiver};
 use eframe::{App, egui, Frame};
-use egui::{CentralPanel, Context, FontId, TopBottomPanel, Label, TextEdit, Button};
-use egui::text::LayoutJob;
+use egui::{CentralPanel, Context, FontId, TopBottomPanel, Label, TextEdit, Button, TextFormat, Color32};
+use egui::text::{LayoutJob, LayoutSection};
 use egui_file::FileDialog;
 use crate::panels::Panels;
 use crate::session::Session;
@@ -130,17 +130,36 @@ impl App for TailorApp {
             }
         });
 
-        CentralPanel::default().show(ctx, |ui| {
+        let frame = egui::containers::Frame {
+            inner_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
+            outer_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
+            rounding: egui::Rounding { nw: 0.0, ne: 0.0, sw: 0.0, se: 0.0 },
+            shadow: eframe::epaint::Shadow { extrusion: 0.0, color: Color32::BLACK },
+            fill: self.session.get_colors().background(),
+            stroke: egui::Stroke::new(0.0, Color32::BLACK),
+        };
+        CentralPanel::default().frame(frame).show(ctx, |ui| {
             self.panels.draw(ui, &mut self.session);
 
             egui::ScrollArea::both().show_rows(ui, 12.0, self.lines.len(),
    |ui, row_range| {
                     for row in row_range {
-                        let layout_job = LayoutJob::simple(
-                            self.lines[row].clone(),
-                            FontId::monospace(12.0),
-                            self.session.get_highlight(&self.lines[row]).foreground(),
-                            0.0);
+                        let text_format = TextFormat {
+                            background: self.session.get_highlight( & self.lines[row]).background(),
+                            color: self.session.get_highlight( & self.lines[row]).foreground(),
+                            font_id: FontId::monospace(12.0),
+                            ..Default::default()
+                        };
+                        let layout_job = LayoutJob {
+                            sections: vec![LayoutSection {
+                                leading_space: 0.0,
+                                byte_range: 0..self.lines[row].len(),
+                                format: text_format,
+                            }],
+                            text: self.lines[row].clone(),
+                            break_on_newline: false,
+                            ..Default::default()
+                        };
                         let line_label = Label::new(layout_job).wrap(false);
                         ui.add(line_label);
                     }
