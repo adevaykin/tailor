@@ -78,7 +78,7 @@ impl Default for Highlight {
 
 impl Highlight {
     pub fn new(pattern: String, colors: Colors) -> Result<Self, String> {
-        if let Ok(regex) = Regex::new(pattern.as_str()) {
+        if let Ok(regex) = Regex::new(format!(r"(?i){}", pattern.as_str()).as_str()) {
             return Ok(Self {
                 pattern,
                 regex: SerializableRegex::new(regex),
@@ -105,7 +105,7 @@ impl Highlight {
     }
 
     pub fn update_regex(&mut self) -> Result<(), ()> {
-        if let Ok(regex) = Regex::new(self.pattern.as_str()) {
+        if let Ok(regex) = Regex::new(format!(r"(?i){}", self.pattern.as_str()).as_str()) {
             self.regex = SerializableRegex::new(regex);
             return Ok(());
         }
