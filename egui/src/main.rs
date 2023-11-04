@@ -15,7 +15,7 @@ use windows::Windows;
 use std::path::{PathBuf};
 use std::sync::mpsc::{channel, Receiver};
 use eframe::{App, egui, Frame};
-use egui::{CentralPanel, Context, FontId, TopBottomPanel, Label, TextEdit, Button, TextFormat, Color32, SidePanel};
+use egui::{CentralPanel, Context, FontId, TopBottomPanel, Label, TextEdit, Button, TextFormat, Color32, SidePanel, Layout, Align, Direction};
 use egui::text::{LayoutJob, LayoutSection};
 use egui_file::FileDialog;
 use crate::panels::Panels;
@@ -94,31 +94,36 @@ impl App for TailorApp {
 
         TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                ui.label("Open");
-                if (ui.button("📃 File")).clicked() {
-                    let mut dialog = FileDialog::open_file(Some(PathBuf::from("../")));
-                    dialog.open();
-                    self.open_file_dialog = Some(dialog);
-                }
-                if (ui.button("📂 Folder")).clicked() {
-                    let mut dialog = FileDialog::select_folder(Some(PathBuf::from("../")));
-                    dialog.open();
-                    self.open_file_dialog = Some(dialog);
-                }
+                ui.horizontal(|ui| {
+                    ui.label("Open");
+                    if (ui.button("📃 File")).clicked() {
+                        let mut dialog = FileDialog::open_file(Some(PathBuf::from("../")));
+                        dialog.open();
+                        self.open_file_dialog = Some(dialog);
+                    }
+                    if (ui.button("📂 Folder")).clicked() {
+                        let mut dialog = FileDialog::select_folder(Some(PathBuf::from("../")));
+                        dialog.open();
+                        self.open_file_dialog = Some(dialog);
+                    }
+                });
 
-                self.recents_box.draw(ui);
+                ui.horizontal(|ui| {
+                    self.recents_box.draw(ui);
+                    let session_settings_button = Button::new("🎨")
+                        .selected(self.panels.session_settings.get_is_visible());
+                    if ui.add(session_settings_button).clicked() {
+                        self.panels.session_settings.toggle_is_visible();
+                    }
+                });
 
-                let session_settings_button = Button::new("🎨")
-                    .selected(self.panels.session_settings.get_is_visible());
-                if ui.add(session_settings_button).clicked() {
-                    self.panels.session_settings.toggle_is_visible();
-                }
-
-                let about_button = Button::new("About")
-                    .selected(self.windows.about.get_is_visible());
-                if ui.add(about_button).clicked() {
-                    self.windows.about.toggle_is_visible();
-                }
+                ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                    let about_button = Button::new("About")
+                        .selected(self.windows.about.get_is_visible());
+                    if ui.add(about_button).clicked() {
+                        self.windows.about.toggle_is_visible();
+                    }
+                });
             });
 
             if let Some(dialog) = &mut self.open_file_dialog {
@@ -172,9 +177,14 @@ impl App for TailorApp {
 
         TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                ui.label(self.session.get_path().display().to_string());
-                ui.add(TextEdit::singleline(&mut self.filter_text).hint_text("Filter").desired_width(120.0));
-                ui.add(TextEdit::singleline(&mut self.search_text).hint_text("Search").desired_width(120.0));
+                ui.horizontal(|ui| {
+                    ui.label(self.session.get_path().display().to_string());
+                });
+
+                ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                    ui.add(TextEdit::singleline(&mut self.search_text).hint_text("Search").desired_width(120.0));
+                    ui.add(TextEdit::singleline(&mut self.filter_text).hint_text("Filter").desired_width(120.0));
+                });
             });
         });
     }
