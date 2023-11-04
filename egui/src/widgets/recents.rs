@@ -21,7 +21,7 @@ impl Default for RecentsBox {
 
 impl RecentsBox {
     pub fn draw(&mut self, ui: &mut egui::Ui) {
-        ComboBox::from_label("Recent")
+        ComboBox::from_label("🔁")
             .selected_text(&self.selected_recent)
             .width(300.0)
             .show_ui(ui, |ui| {

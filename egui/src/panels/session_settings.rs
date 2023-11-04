@@ -25,8 +25,8 @@ impl SessionSettingsPanel {
 
         egui::SidePanel::right("session_settings")
             .resizable(true)
-            .default_width(250.0)
-            .width_range(250.0..=250.0)
+            .default_width(280.0)
+            .width_range(280.0..=280.0)
             .show_inside(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.heading("Session");
@@ -38,8 +38,12 @@ impl SessionSettingsPanel {
                     color_edit_button_rgb(ui, &mut session.get_colors().background);
                 });
                 ui.separator();
-                for highlight in session.get_highlights() {
+                let mut remove_at = None;
+                for (index, highlight) in session.get_highlights().iter_mut().enumerate() {
                     ui.horizontal(|ui| {
+                        if ui.button("🗑").clicked() {
+                            remove_at = Some(index);
+                        }
                         let pattern_edit = TextEdit::singleline(highlight.get_pattern())
                             .hint_text("Regex Pattern")
                             .desired_width(145.0);
@@ -50,7 +54,10 @@ impl SessionSettingsPanel {
                         color_edit_button_rgb(ui, &mut highlight.get_mut_colors().background);
                     });
                 }
-                if ui.button("+").clicked() {
+                if let Some(index) = remove_at {
+                    session.remove_highlight(index);
+                }
+                if ui.button(" + ").clicked() {
                     session.get_highlights().push(Highlight::default());
                 }
 

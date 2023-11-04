@@ -11,8 +11,8 @@ pub struct Colors {
 impl Default for Colors {
     fn default() -> Self {
         Self {
-            foreground: [0.0, 0.0, 0.0],
-            background: [1.0, 1.0, 1.0],
+            foreground: [1.0, 1.0, 1.0],
+            background: [0.0, 0.0, 0.0],
         }
     }
 }

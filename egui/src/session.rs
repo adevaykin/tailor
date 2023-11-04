@@ -9,10 +9,10 @@ use crate::highlight::{Colors, Highlight};
 
 fn default_highlights() -> Vec<Highlight> {
     vec![
-        Highlight::new(String::from("ERROR"), Colors { foreground: [1.0, 0.0, 0.0], background: [0.0, 0.0, 0.0] }).unwrap(),
-        Highlight::new(String::from("WARN"), Colors { foreground: [255.0, 255.0, 0.0], background: [0.0, 0.0, 0.0] }).unwrap(),
-        Highlight::new(String::from("DEBUG"), Colors { foreground: [0.0, 255.0, 0.0], background: [0.0, 0.0, 0.0] }).unwrap(),
-        Highlight::new(String::from("INFO"), Colors { foreground: [0.0, 0.0, 255.0], background: [0.0, 0.0, 0.0] }).unwrap(),
+        Highlight::new(String::from("ERROR"), Colors { foreground: [1.0, 1.0, 1.0], background: [0.75, 0.0, 0.0] }).unwrap(),
+        Highlight::new(String::from("WARN"), Colors { foreground: [0.84, 0.66, 0.39], background: [0.0, 0.0, 0.0] }).unwrap(),
+        Highlight::new(String::from("DEBUG"), Colors { foreground: [0.35, 0.76, 0.35], background: [0.0, 0.0, 0.0] }).unwrap(),
+        Highlight::new(String::from("INFO"), Colors { foreground: [0.53, 0.53, 0.86], background: [0.0, 0.0, 0.0] }).unwrap(),
     ]
 }
 
@@ -53,6 +53,39 @@ impl Session {
         }
     }
 
+    pub fn save(&self) {
+        if let Ok(session_save_path) = Self::get_save_path(&self.path) {
+            let session_json = serde_json::to_string(&self).unwrap();
+            let _ = std::fs::write(session_save_path, session_json);
+        }
+    }
+
+    pub fn get_path(&self) -> &PathBuf {
+        &self.path
+    }
+
+    pub fn get_colors(&mut self) -> &mut Colors {
+        &mut self.colors
+    }
+
+    pub fn get_highlights(&mut self) -> &mut Vec<Highlight> {
+        &mut self.highlights
+    }
+
+    pub fn remove_highlight(&mut self, index: usize) {
+        let _ = self.highlights.remove(index);
+    }
+
+    pub fn get_highlight(&self, line: &str) -> &Colors {
+        for highlight in &self.highlights {
+            if highlight.is_matching(line) {
+                return highlight.get_colors();
+            }
+        }
+
+        &self.colors
+    }
+
     fn get_save_path(path: &PathBuf) -> Result<PathBuf, Box<dyn Error>> {
         let data_path = get_app_root(AppDataType::UserData, &APP_INFO)?;
         if path.display().to_string().is_empty() {
@@ -87,34 +120,5 @@ impl Session {
         }
 
         None
-    }
-
-    pub fn save(&self) {
-        if let Ok(session_save_path) = Self::get_save_path(&self.path) {
-            let session_json = serde_json::to_string(&self).unwrap();
-            let _ = std::fs::write(session_save_path, session_json);
-        }
-    }
-
-    pub fn get_path(&self) -> &PathBuf {
-        &self.path
-    }
-
-    pub fn get_colors(&mut self) -> &mut Colors {
-        &mut self.colors
-    }
-
-    pub fn get_highlights(&mut self) -> &mut Vec<Highlight> {
-        &mut self.highlights
-    }
-
-    pub fn get_highlight(&self, line: &str) -> &Colors {
-        for highlight in &self.highlights {
-            if highlight.is_matching(line) {
-                return highlight.get_colors();
-            }
-        }
-
-        &self.colors
     }
 }

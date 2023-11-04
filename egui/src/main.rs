@@ -15,7 +15,7 @@ use windows::Windows;
 use std::path::{PathBuf};
 use std::sync::mpsc::{channel, Receiver};
 use eframe::{App, egui, Frame};
-use egui::{CentralPanel, Context, FontId, TopBottomPanel, Label, TextEdit, Button, TextFormat, Color32};
+use egui::{CentralPanel, Context, FontId, TopBottomPanel, Label, TextEdit, Button, TextFormat, Color32, SidePanel};
 use egui::text::{LayoutJob, LayoutSection};
 use egui_file::FileDialog;
 use crate::panels::Panels;
@@ -88,6 +88,7 @@ impl App for TailorApp {
                         self.lines.clear();
                     }
                 }
+                ctx.request_repaint();
             }
         }
 
