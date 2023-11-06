@@ -19,14 +19,20 @@ impl AboutWindow {
             return;
         }
 
+        let mut is_visible_update = true;
+
         egui::Window::new("About")
             .collapsible(false)
             .resizable(true)
             .default_width(400.0)
             .default_height(400.0)
+            .title_bar(true)
+            .open(&mut is_visible_update)
             .show(ctx, |ui| {
                 self.ui(ui);
             });
+
+        self.is_visible = is_visible_update;
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) {
