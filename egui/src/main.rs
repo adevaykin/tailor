@@ -12,10 +12,10 @@ const APP_INFO: AppInfo = AppInfo{name: "Tailor", author: "Alexander Devaikin"};
 
 use tailor::{Tailor, Message};
 use windows::Windows;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use std::sync::mpsc::{channel, Receiver};
 use eframe::{App, egui, Frame};
-use egui::{CentralPanel, Context, FontId, TopBottomPanel, Label, TextEdit, Button, TextFormat, Color32, SidePanel, Layout, Align, Direction};
+use egui::{CentralPanel, Context, FontId, TopBottomPanel, Label, TextEdit, Button, TextFormat, Color32, Layout, Align};
 use egui::text::{LayoutJob, LayoutSection};
 use egui_file::FileDialog;
 use crate::panels::Panels;
@@ -33,6 +33,7 @@ struct TailorApp {
     tailor: Tailor,
     message_rx: Option<Receiver<Message>>,
     lines: Vec<String>,
+    follow: bool,
     filter_text: String,
     search_text: String,
 }
@@ -50,6 +51,7 @@ impl TailorApp {
             tailor,
             message_rx: None,
             lines: vec![],
+            follow: true,
             filter_text: String::new(),
             search_text: String::new(),
         }
@@ -149,6 +151,12 @@ impl App for TailorApp {
 
             egui::ScrollArea::both().show_rows(ui, 12.0, self.lines.len(),
    |ui, row_range| {
+                    if row_range.end == self.lines.len() {
+                        self.follow = true;
+                    } else {
+                        self.follow = false;
+                    }
+                    
                     for row in row_range {
                         let text_format = TextFormat {
                             background: self.session.get_highlight( & self.lines[row]).background(),
@@ -169,7 +177,10 @@ impl App for TailorApp {
                         let line_label = Label::new(layout_job).wrap(false);
                         ui.add(line_label);
                     }
-                    ui.add(Label::new(""));
+                    let log_end_label_response = ui.add(Label::new(""));
+                    if self.follow {
+                        log_end_label_response.scroll_to_me(Some(egui::Align::BOTTOM));
+                    }
             });
         });
 
@@ -178,6 +189,11 @@ impl App for TailorApp {
         TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.horizontal(|ui| {
+                    let follow_button = Button::new("☟")
+                        .selected(self.follow);
+                    if ui.add(follow_button).clicked() {
+                        self.follow = !self.follow;
+                    }
                     ui.label(self.session.get_path().display().to_string());
                 });
 
