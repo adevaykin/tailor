@@ -33,7 +33,6 @@ struct TailorApp {
     tailor: Tailor,
     message_rx: Option<Receiver<Message>>,
     lines: Vec<String>,
-    follow: bool,
     filter_text: String,
     search_text: String,
 }
@@ -51,7 +50,6 @@ impl TailorApp {
             tailor,
             message_rx: None,
             lines: vec![],
-            follow: true,
             filter_text: String::new(),
             search_text: String::new(),
         }
@@ -149,14 +147,11 @@ impl App for TailorApp {
         CentralPanel::default().frame(frame).show(ctx, |ui| {
             self.panels.draw(ui, &mut self.session);
 
-            egui::ScrollArea::both().show_rows(ui, 12.0, self.lines.len(),
+            egui::ScrollArea::both()
+                .auto_shrink([false, false])
+                .stick_to_bottom(true)
+                .show_rows(ui, 12.0, self.lines.len(),
    |ui, row_range| {
-                    if row_range.end == self.lines.len() {
-                        self.follow = true;
-                    } else {
-                        self.follow = false;
-                    }
-                    
                     for row in row_range {
                         let text_format = TextFormat {
                             background: self.session.get_highlight( & self.lines[row]).background(),
@@ -177,10 +172,7 @@ impl App for TailorApp {
                         let line_label = Label::new(layout_job).wrap(false);
                         ui.add(line_label);
                     }
-                    let log_end_label_response = ui.add(Label::new(""));
-                    if self.follow {
-                        log_end_label_response.scroll_to_me(Some(egui::Align::BOTTOM));
-                    }
+                    ui.add(Label::new(""));
             });
         });
 
@@ -189,11 +181,6 @@ impl App for TailorApp {
         TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.horizontal(|ui| {
-                    let follow_button = Button::new("☟")
-                        .selected(self.follow);
-                    if ui.add(follow_button).clicked() {
-                        self.follow = !self.follow;
-                    }
                     ui.label(self.session.get_path().display().to_string());
                 });
 
