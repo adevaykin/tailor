@@ -18,9 +18,31 @@ use eframe::{App, egui, Frame};
 use egui::{CentralPanel, Context, FontId, TopBottomPanel, Label, TextEdit, Button, TextFormat, Color32, Layout, Align};
 use egui::text::{LayoutJob, LayoutSection};
 use egui_file::FileDialog;
+use regex::Regex;
 use crate::panels::Panels;
 use crate::session::Session;
 use crate::widgets::recents::RecentsBox;
+
+fn find_ranges(line: &String, regex: &Regex) -> Vec<(usize, usize)> {
+    let captures = regex.find_iter(line);
+    captures.map(|c| (c.start(), c.end())).collect()
+}
+
+fn fill_empty_ranges(ranges: Vec<(usize, usize)>, total_len: usize) -> Vec<(usize, usize, bool)> {
+    let mut result = vec![];
+    let mut last = 0;
+    for (start, end) in ranges {
+        if start > last {
+            result.push((last, start, false));
+        }
+        result.push((start, end, true));
+        last = end;
+    }
+    if total_len > last {
+        result.push((last, total_len, false));
+    }
+    result
+}
 
 struct TailorApp {
     panels: Panels,
@@ -36,6 +58,7 @@ struct TailorApp {
     filtered_lines: Vec<String>,
     filter_text: String,
     search_text: String,
+    search_regex: Option<Regex>,
 }
 
 impl TailorApp {
@@ -54,6 +77,7 @@ impl TailorApp {
             filtered_lines: vec![],
             filter_text: String::new(),
             search_text: String::new(),
+            search_regex: None,
         }
     }
 
@@ -174,12 +198,32 @@ impl App for TailorApp {
                             font_id: FontId::monospace(12.0),
                             ..Default::default()
                         };
-                        let layout_job = LayoutJob {
-                            sections: vec![LayoutSection {
+                        let inverted_text_format = TextFormat {
+                            background: self.session.get_highlight( & self.filtered_lines[row]).foreground(),
+                            color: self.session.get_highlight( & self.filtered_lines[row]).background(),
+                            font_id: FontId::monospace(12.0),
+                            ..Default::default()
+                        };
+
+                        let found_ranges = if let Some(regex) = &self.search_regex {
+                            find_ranges(&self.filtered_lines[row], regex)
+                        } else {
+                            vec![]
+                        };
+
+                        let found_ranges = fill_empty_ranges(found_ranges, self.filtered_lines[row].len());
+                        let mut layout_secions = vec![];
+                        for (start, end, invert) in found_ranges {
+                            let format = if invert { inverted_text_format.clone() } else { text_format.clone() };
+                            layout_secions.push(LayoutSection {
                                 leading_space: 0.0,
-                                byte_range: 0..self.filtered_lines[row].len(),
-                                format: text_format,
-                            }],
+                                byte_range: start..end,
+                                format,
+                            });
+                        }
+
+                        let layout_job = LayoutJob {
+                            sections: layout_secions,
                             text: self.filtered_lines[row].clone(),
                             break_on_newline: false,
                             ..Default::default()
@@ -203,7 +247,13 @@ impl App for TailorApp {
                     if ui.add(TextEdit::singleline(&mut self.search_text)
                         .hint_text("Search").desired_width(120.0))
                         .changed() {
-                        // No op
+                        if !self.search_text.is_empty() {
+                            if let Ok(regex) = Regex::new(format!(r"(?i){}", &self.search_text).as_str()) {
+                                self.search_regex = Some(regex);
+                            }
+                        } else {
+                            self.search_regex = None;
+                        }
                     }
                     if ui.add(TextEdit::singleline(&mut self.filter_text)
                         .hint_text("Filter").desired_width(120.0))
