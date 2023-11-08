@@ -1,16 +1,14 @@
 # Tailor
 
 Lightweight and quick log file viewer featuring:
-
 * Automatic log file following, just like unix utility `tail` does
 * Automatic switching to the latest updated file in selected directory
 * Pattern-based line highlighting
 * Session preferences featuring patterns and highlight settings
+* Automatic scroll to follow new lines
+* Search and filter logs
 
 Features still missing:
-* Automatic scroll to follow new lines
-* Button to toggle automatic scroll
-* Search and filter
 * Alert: display alert when encountering specified pattern in log
 
 ![Tailor Screenshot](./tailor.png)
