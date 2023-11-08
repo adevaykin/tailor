@@ -33,6 +33,7 @@ struct TailorApp {
     tailor: Tailor,
     message_rx: Option<Receiver<Message>>,
     lines: Vec<String>,
+    filtered_lines: Vec<String>,
     filter_text: String,
     search_text: String,
 }
@@ -50,8 +51,21 @@ impl TailorApp {
             tailor,
             message_rx: None,
             lines: vec![],
+            filtered_lines: vec![],
             filter_text: String::new(),
             search_text: String::new(),
+        }
+    }
+
+    fn update_filtered_lines(&mut self) {
+        if self.filter_text.is_empty() {
+            self.filtered_lines = self.lines.clone();
+        } else {
+            self.filtered_lines = self.lines
+                .clone()
+                .into_iter()
+                .filter(|line| line.contains(&self.filter_text))
+                .collect();
         }
     }
 }
@@ -88,6 +102,7 @@ impl App for TailorApp {
                         self.lines.clear();
                     }
                 }
+                self.update_filtered_lines();
                 ctx.request_repaint();
             }
         }
@@ -150,22 +165,22 @@ impl App for TailorApp {
             egui::ScrollArea::both()
                 .auto_shrink([false, false])
                 .stick_to_bottom(true)
-                .show_rows(ui, 12.0, self.lines.len(),
+                .show_rows(ui, 12.0, self.filtered_lines.len(),
    |ui, row_range| {
                     for row in row_range {
                         let text_format = TextFormat {
-                            background: self.session.get_highlight( & self.lines[row]).background(),
-                            color: self.session.get_highlight( & self.lines[row]).foreground(),
+                            background: self.session.get_highlight( & self.filtered_lines[row]).background(),
+                            color: self.session.get_highlight( & self.filtered_lines[row]).foreground(),
                             font_id: FontId::monospace(12.0),
                             ..Default::default()
                         };
                         let layout_job = LayoutJob {
                             sections: vec![LayoutSection {
                                 leading_space: 0.0,
-                                byte_range: 0..self.lines[row].len(),
+                                byte_range: 0..self.filtered_lines[row].len(),
                                 format: text_format,
                             }],
-                            text: self.lines[row].clone(),
+                            text: self.filtered_lines[row].clone(),
                             break_on_newline: false,
                             ..Default::default()
                         };
@@ -185,8 +200,16 @@ impl App for TailorApp {
                 });
 
                 ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                    ui.add(TextEdit::singleline(&mut self.search_text).hint_text("Search").desired_width(120.0));
-                    ui.add(TextEdit::singleline(&mut self.filter_text).hint_text("Filter").desired_width(120.0));
+                    if ui.add(TextEdit::singleline(&mut self.search_text)
+                        .hint_text("Search").desired_width(120.0))
+                        .changed() {
+                        // No op
+                    }
+                    if ui.add(TextEdit::singleline(&mut self.filter_text)
+                        .hint_text("Filter").desired_width(120.0))
+                        .changed() {
+                        self.update_filtered_lines();
+                    }
                 });
             });
         });
