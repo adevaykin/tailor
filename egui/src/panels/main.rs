@@ -2,10 +2,9 @@ use egui::{CentralPanel, Color32, Context, FontId, Label, TextFormat, Ui};
 use egui::text::{LayoutJob, LayoutSection};
 use regex::Regex;
 use crate::lines::LinesState;
-use crate::panels::session_settings::SessionSettingsPanel;
 use crate::session::Session;
 
-fn find_ranges(line: &String, regex: &Regex) -> Vec<(usize, usize)> {
+fn find_ranges(line: &str, regex: &Regex) -> Vec<(usize, usize)> {
     let captures = regex.find_iter(line);
     captures.map(|c| (c.start(), c.end())).collect()
 }

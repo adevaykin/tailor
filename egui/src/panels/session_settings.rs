@@ -1,5 +1,5 @@
 use egui::color_picker::color_edit_button_rgb;
-use egui::{Context, TextEdit, Ui};
+use egui::{Context, TextEdit};
 use crate::highlight::{Highlight};
 use crate::session::Session;
 

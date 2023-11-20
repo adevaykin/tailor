@@ -17,22 +17,19 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use eframe::{App, egui, Frame};
-use egui::{CentralPanel, Context, FontId, TopBottomPanel, Label, TextEdit, Button, TextFormat, Color32, Layout, Align};
-use egui::text::{LayoutJob, LayoutSection};
+use egui::{Context, TopBottomPanel, TextEdit, Button, Layout, Align};
 use egui_file::FileDialog;
-use objc::{msg_send,class,sel,sel_impl};
-use objc::runtime::{Class, Object};
 use regex::Regex;
 use crate::lines::LinesState;
 use crate::panels::main::MainPanel;
 use crate::session::Session;
 use crate::widgets::recents::RecentsBox;
 
-struct TailorClinet {
+struct TailorClient {
     handle: std::thread::JoinHandle<()>,
 }
 
-impl TailorClinet {
+impl TailorClient {
     fn new(tailor: &mut Tailor, path: &PathBuf, ctx: Context, log_contents: Arc<Mutex<LinesState>>) -> Self {
         let (message_tx, message_rx) = channel();
         let client_handle = std::thread::spawn(move || {
@@ -78,7 +75,7 @@ struct TailorApp {
     recents_box: RecentsBox,
     next_open_file: Option<PathBuf>,
     tailor: Tailor,
-    tailor_client: Option<TailorClinet>,
+    tailor_client: Option<TailorClient>,
     log_contents: Arc<Mutex<LinesState>>,
     log_panel: MainPanel,
     settings_panel: panels::session_settings::SessionSettingsPanel,
@@ -115,7 +112,7 @@ impl App for TailorApp {
                     if let Ok(mut lines) = self.log_contents.lock() {
                         (*lines).clear_lines();
                     }
-                    self.tailor_client = Some(TailorClinet::new(
+                    self.tailor_client = Some(TailorClient::new(
                         &mut self.tailor,
                         path,
                         ctx.clone(),
