@@ -1,5 +1,5 @@
 use egui::color_picker::color_edit_button_rgb;
-use egui::{TextEdit, Ui};
+use egui::{Context, TextEdit, Ui};
 use crate::highlight::{Highlight};
 use crate::session::Session;
 
@@ -17,7 +17,7 @@ impl SessionSettingsPanel {
         self.is_visible
     }
 
-    pub fn show(&mut self, ui: &mut Ui, session: &mut Session) {
+    pub fn draw(&mut self, ctx: &Context, session: &mut Session) {
         if !self.is_visible {
             session.save();
             return;
@@ -27,7 +27,7 @@ impl SessionSettingsPanel {
             .resizable(true)
             .default_width(280.0)
             .width_range(280.0..=280.0)
-            .show_inside(ui, |ui| {
+            .show(ctx,|ui| {
                 ui.vertical_centered(|ui| {
                     ui.heading("Session");
                 });

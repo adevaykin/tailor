@@ -24,7 +24,7 @@ use objc::{msg_send,class,sel,sel_impl};
 use objc::runtime::{Class, Object};
 use regex::Regex;
 use crate::lines::LinesState;
-use crate::panels::Panels;
+use crate::panels::main::MainPanel;
 use crate::session::Session;
 use crate::widgets::recents::RecentsBox;
 
@@ -70,29 +70,7 @@ impl TailorClinet {
     }
 }
 
-fn find_ranges(line: &String, regex: &Regex) -> Vec<(usize, usize)> {
-    let captures = regex.find_iter(line);
-    captures.map(|c| (c.start(), c.end())).collect()
-}
-
-fn fill_empty_ranges(ranges: Vec<(usize, usize)>, total_len: usize) -> Vec<(usize, usize, bool)> {
-    let mut result = vec![];
-    let mut last = 0;
-    for (start, end) in ranges {
-        if start > last {
-            result.push((last, start, false));
-        }
-        result.push((start, end, true));
-        last = end;
-    }
-    if total_len > last {
-        result.push((last, total_len, false));
-    }
-    result
-}
-
 struct TailorApp {
-    panels: Panels,
     windows: Windows,
     session: Session,
     is_dirty: bool,
@@ -102,6 +80,8 @@ struct TailorApp {
     tailor: Tailor,
     tailor_client: Option<TailorClinet>,
     log_contents: Arc<Mutex<LinesState>>,
+    log_panel: MainPanel,
+    settings_panel: panels::session_settings::SessionSettingsPanel,
     filter_text: String,
     search_text: String,
     search_regex: Option<Regex>,
@@ -110,7 +90,6 @@ struct TailorApp {
 impl TailorApp {
     fn new(tailor: Tailor) -> Self {
         Self {
-            panels: Panels::default(),
             windows: Windows::default(),
             session: Session::default(),
             is_dirty: true,
@@ -120,6 +99,8 @@ impl TailorApp {
             tailor,
             tailor_client: None,
             log_contents: Arc::new(Mutex::new(LinesState::new())),
+            log_panel: MainPanel::new(),
+            settings_panel: panels::session_settings::SessionSettingsPanel::default(),
             filter_text: String::new(),
             search_text: String::new(),
             search_regex: None,
@@ -171,9 +152,9 @@ impl App for TailorApp {
                 ui.horizontal(|ui| {
                     self.recents_box.draw(ui);
                     let session_settings_button = Button::new("🎨")
-                        .selected(self.panels.session_settings.get_is_visible());
+                        .selected(self.settings_panel.get_is_visible());
                     if ui.add(session_settings_button).clicked() {
-                        self.panels.session_settings.toggle_is_visible();
+                        self.settings_panel.toggle_is_visible();
                     }
                 });
 
@@ -196,69 +177,10 @@ impl App for TailorApp {
             }
         });
 
-        let frame = egui::containers::Frame {
-            inner_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
-            outer_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
-            rounding: egui::Rounding { nw: 0.0, ne: 0.0, sw: 0.0, se: 0.0 },
-            shadow: eframe::epaint::Shadow { extrusion: 0.0, color: Color32::BLACK },
-            fill: self.session.get_colors().background(),
-            stroke: egui::Stroke::new(0.0, Color32::BLACK),
-        };
-        CentralPanel::default().frame(frame).show(ctx, |ui| {
-            self.panels.draw(ui, &mut self.session);
-
-            if let Ok(mut log_contents) = self.log_contents.lock() {
-                let filtered_lines = log_contents.get_filtered_lines(&self.filter_text);
-                egui::ScrollArea::both()
-                    .auto_shrink([false, false])
-                    .stick_to_bottom(true)
-                    .show_rows(ui, 12.0, filtered_lines.len(),
-           |ui, row_range| {
-                           for row in row_range {
-                               let text_format = TextFormat {
-                                   background: self.session.get_highlight(&filtered_lines[row]).background(),
-                                   color: self.session.get_highlight(&filtered_lines[row]).foreground(),
-                                   font_id: FontId::monospace(12.0),
-                                   ..Default::default()
-                               };
-                               let inverted_text_format = TextFormat {
-                                   background: self.session.get_highlight(&filtered_lines[row]).foreground(),
-                                   color: self.session.get_highlight(&filtered_lines[row]).background(),
-                                   font_id: FontId::monospace(12.0),
-                                   ..Default::default()
-                               };
-
-                               let found_ranges = if let Some(regex) = &self.search_regex {
-                                   find_ranges(&filtered_lines[row], regex)
-                               } else {
-                                   vec![]
-                               };
-
-                               let found_ranges = fill_empty_ranges(found_ranges, filtered_lines[row].len());
-                               let mut layout_secions = vec![];
-                               for (start, end, invert) in found_ranges {
-                                   let format = if invert { inverted_text_format.clone() } else { text_format.clone() };
-                                   layout_secions.push(LayoutSection {
-                                       leading_space: 0.0,
-                                       byte_range: start..end,
-                                       format,
-                                   });
-                               }
-
-                               let layout_job = LayoutJob {
-                                   sections: layout_secions,
-                                   text: filtered_lines[row].clone(),
-                                   break_on_newline: false,
-                                   ..Default::default()
-                               };
-                               let line_label = Label::new(layout_job).wrap(false);
-                               ui.add(line_label);
-                           }
-                           ui.add(Label::new(""));
-               });
-            }
-        });
-
+        if let Ok(mut log_contents) = self.log_contents.lock() {
+            self.log_panel.draw(&mut self.session, ctx, &mut log_contents, &self.filter_text, &self.search_regex);
+        }
+        self.settings_panel.draw(ctx, &mut self.session);
         self.windows.draw(ctx);
 
         TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
