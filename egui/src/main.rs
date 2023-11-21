@@ -26,6 +26,7 @@ use crate::session::Session;
 use crate::widgets::recents::RecentsBox;
 
 struct TailorClient {
+    #[allow(dead_code)]
     handle: std::thread::JoinHandle<()>,
 }
 

@@ -1,4 +1,4 @@
-use egui::{CentralPanel, Color32, Context, FontId, Label, TextFormat, Ui};
+use egui::{CentralPanel, Color32, Context, FontId, Label, Sense, TextFormat};
 use egui::text::{LayoutJob, LayoutSection};
 use regex::Regex;
 use crate::lines::LinesState;
@@ -47,37 +47,51 @@ impl MainPanel {
             stroke: egui::Stroke::new(0.0, Color32::BLACK),
         };
         CentralPanel::default().frame(frame).show(ctx, |ui| {
-            let filtered_lines = log_contents.get_filtered_lines(filter_text);
+            let filtered_lines = log_contents.get_filtered_lines(filter_text).clone();
             egui::ScrollArea::both()
                 .auto_shrink([false, false])
                 .stick_to_bottom(true)
                 .show_rows(ui, 12.0, filtered_lines.len(),
        |ui, row_range| {
                        for row in row_range {
+                           let line = &filtered_lines[row].0;
+                           let is_selected = log_contents.is_selected(filtered_lines[row].1 as usize);
                            let text_format = TextFormat {
-                               background: session.get_highlight(&filtered_lines[row]).background(),
-                               color: session.get_highlight(&filtered_lines[row]).foreground(),
+                               background: session.get_highlight(line).background(),
+                               color: session.get_highlight(line).foreground(),
                                font_id: FontId::monospace(12.0),
                                ..Default::default()
                            };
                            let inverted_text_format = TextFormat {
-                               background: session.get_highlight(&filtered_lines[row]).foreground(),
-                               color: session.get_highlight(&filtered_lines[row]).background(),
+                               background: session.get_highlight(line).foreground(),
+                               color: session.get_highlight(line).background(),
+                               font_id: FontId::monospace(12.0),
+                               ..Default::default()
+                           };
+                           let selected_text_format = TextFormat {
+                               background: Color32::BLUE,
+                               color: Color32::WHITE,
                                font_id: FontId::monospace(12.0),
                                ..Default::default()
                            };
 
                            let found_ranges = if let Some(regex) = search_pattern {
-                               find_ranges(&filtered_lines[row], regex)
+                               find_ranges(line, regex)
                            } else {
                                vec![]
                            };
 
-                           let found_ranges = fill_empty_ranges(found_ranges, filtered_lines[row].len());
-                           let mut layout_secions = vec![];
+                           let found_ranges = fill_empty_ranges(found_ranges, line.len());
+                           let mut layout_sections = vec![];
                            for (start, end, invert) in found_ranges {
-                               let format = if invert { inverted_text_format.clone() } else { text_format.clone() };
-                               layout_secions.push(LayoutSection {
+                               let format = if invert {
+                                   inverted_text_format.clone()
+                               } else if is_selected {
+                                   selected_text_format.clone()
+                               } else {
+                                   text_format.clone()
+                               };
+                               layout_sections.push(LayoutSection {
                                    leading_space: 0.0,
                                    byte_range: start..end,
                                    format,
@@ -85,13 +99,17 @@ impl MainPanel {
                            }
 
                            let layout_job = LayoutJob {
-                               sections: layout_secions,
-                               text: filtered_lines[row].clone(),
+                               sections: layout_sections,
+                               text: line.clone(),
                                break_on_newline: false,
                                ..Default::default()
                            };
-                           let line_label = Label::new(layout_job).wrap(false);
-                           ui.add(line_label);
+                           let line_label = Label::new(layout_job)
+                               .wrap(false)
+                               .sense(Sense::click());
+                           if ui.add(line_label).clicked() {
+                               log_contents.toggle_line_selection(row);
+                           }
                        }
                        ui.add(Label::new(""));
                });
