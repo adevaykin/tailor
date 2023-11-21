@@ -55,7 +55,7 @@ impl Session {
 
     pub fn save(&self) {
         if let Ok(session_save_path) = Self::get_save_path(&self.path) {
-            let session_json = serde_json::to_string(&self).unwrap();
+            let session_json = serde_json::to_string(&self).unwrap_or("{}".to_string());
             let _ = std::fs::write(session_save_path, session_json);
         }
     }

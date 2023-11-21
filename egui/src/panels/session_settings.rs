@@ -48,7 +48,7 @@ impl SessionSettingsPanel {
                             .hint_text("Regex Pattern")
                             .desired_width(145.0);
                         if ui.add(pattern_edit).changed() {
-                            highlight.update_regex().unwrap();
+                            let _ = highlight.update_regex();
                         }
                         color_edit_button_rgb(ui, &mut highlight.get_mut_colors().foreground);
                         color_edit_button_rgb(ui, &mut highlight.get_mut_colors().background);

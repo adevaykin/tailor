@@ -29,7 +29,6 @@ impl LinesState {
 
     pub fn toggle_line_selection(&mut self, idx: usize) {
         self.selected_lines[idx] = !self.selected_lines[idx];
-        log::info!("{} {}", idx, self.selected_lines[idx]);
     }
 
     pub fn is_selected(&self, idx: usize) -> bool {

@@ -58,7 +58,7 @@ impl RecentsBox {
                     }
                 } else {
                     let recents: Vec<String> = vec![];
-                    let recents_json = serde_json::to_string(&recents).unwrap();
+                    let recents_json = serde_json::to_string(&recents).unwrap_or("{}".to_string());
                     let _ = std::fs::write(&recents_path, recents_json);
                 }
             }
@@ -70,7 +70,7 @@ impl RecentsBox {
     fn try_save_recents(recents: &Vec<String>) {
         if let Ok(data_path) = get_app_root(AppDataType::UserData, &APP_INFO) {
             let recents_path = data_path.join(RECENTS_FILENAME);
-            let recents_json = serde_json::to_string(recents).unwrap();
+            let recents_json = serde_json::to_string(recents).unwrap_or("{}".to_string());
             let _ = std::fs::write(recents_path, recents_json);
         }
     }

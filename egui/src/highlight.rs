@@ -53,7 +53,7 @@ impl<'de> Deserialize<'de> for SerializableRegex {
     {
         let s = String::deserialize(deserializer)?;
         Ok(Self {
-            regex: Regex::new(&s).unwrap(),
+            regex: Regex::new(&s).unwrap_or(Regex::new("").unwrap()),
         })
     }
 }
