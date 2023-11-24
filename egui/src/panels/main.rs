@@ -108,7 +108,14 @@ impl MainPanel {
                                .wrap(false)
                                .sense(Sense::click());
                            if ui.add(line_label).clicked() {
-                               log_contents.toggle_line_selection(row);
+                               let modifiers = ui.input(|i| i.modifiers);
+                               if modifiers.ctrl || modifiers.command {
+                                   log_contents.toggle_add_selection(row);
+                               } else if modifiers.shift {
+                                   log_contents.toggle_add_range_selection(row);
+                               } else {
+                                   log_contents.toggle_single_line_selection(row);
+                               }
                            }
                        }
                        ui.add(Label::new(""));
