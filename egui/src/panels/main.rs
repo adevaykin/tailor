@@ -1,4 +1,3 @@
-use clipboard::{ClipboardContext, ClipboardProvider};
 use egui::{CentralPanel, Color32, Context, FontId, Label, Sense, TextFormat};
 use egui::text::{LayoutJob, LayoutSection};
 use regex::Regex;
@@ -41,12 +40,7 @@ impl MainPanel {
         filter_text: &String, search_pattern: &Option<Regex>) {
         ctx.input(|i| {
             if i.key_pressed(egui::Key::C) && (i.modifiers.command || i.modifiers.ctrl) {
-                if let Ok(ctx) = ClipboardProvider::new() {
-                    let mut ctxx: ClipboardContext = ctx;
-                    if ctxx.set_contents(log_contents.get_selected_text()).is_err() {
-                        log::error!("Failed to copy to clipboard");
-                    }
-                }
+                log_contents.copy_selected_to_clipboard();
             }
         });
 
@@ -119,7 +113,9 @@ impl MainPanel {
                            let line_label = Label::new(layout_job)
                                .wrap(false)
                                .sense(Sense::click());
-                           if ui.add(line_label).clicked() {
+                           if ui.add(line_label)
+                               .context_menu(|ui| self.nested_menus(ui, log_contents, row))
+                               .clicked() {
                                let modifiers = ui.input(|i| i.modifiers);
                                if modifiers.ctrl || modifiers.command {
                                    log_contents.toggle_add_selection(row);
@@ -133,5 +129,15 @@ impl MainPanel {
                        ui.add(Label::new(""));
                });
         });
+    }
+
+    fn nested_menus(&mut self, ui: &mut egui::Ui, log_contents: &mut LinesState, row: usize) {
+        if !log_contents.is_selected(row) {
+            log_contents.toggle_single_line_selection(row);
+        }
+        if ui.button("Copy (Ctrl/Cmd+C)").clicked() {
+            log_contents.copy_selected_to_clipboard();
+            ui.close_menu();
+        }
     }
 }

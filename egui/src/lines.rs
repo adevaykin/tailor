@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use clipboard::{ClipboardContext, ClipboardProvider};
 
 pub struct LinesState {
     lines: Vec<String>,
@@ -82,12 +83,13 @@ impl LinesState {
         self.selected_lines.contains(&idx)
     }
 
-    pub fn get_selected_text(&self) -> String {
-        self.selected_lines
-            .iter()
-            .map(|idx| self.lines[*idx].clone())
-            .collect::<Vec<String>>()
-            .join("\n")
+    pub fn copy_selected_to_clipboard(&self) {
+        if let Ok(ctx) = ClipboardProvider::new() {
+            let mut ctxx: ClipboardContext = ctx;
+            if ctxx.set_contents(self.get_selected_text()).is_err() {
+                log::error!("Failed to copy to clipboard");
+            }
+        }
     }
 
     pub fn get_filtered_lines(&mut self, pattern: &String) -> &Vec<(String, u32)> {
@@ -111,5 +113,13 @@ impl LinesState {
         }
 
         &self.filtered_lines
+    }
+
+    fn get_selected_text(&self) -> String {
+        self.selected_lines
+            .iter()
+            .map(|idx| self.lines[*idx].clone())
+            .collect::<Vec<String>>()
+            .join("\n")
     }
 }
