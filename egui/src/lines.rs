@@ -1,9 +1,9 @@
-use std::cmp::min;
 use std::collections::HashSet;
 
 pub struct LinesState {
     lines: Vec<String>,
-    filtered_lines: Vec<(String,u32)>, /// (line, id)
+    filtered_lines: Vec<(String, u32)>,
+    /// (line, id)
     selected_lines: HashSet<usize>,
     is_dirty: bool,
 }
@@ -82,19 +82,30 @@ impl LinesState {
         self.selected_lines.contains(&idx)
     }
 
-    pub fn get_filtered_lines(&mut self, pattern: &String) -> &Vec<(String,u32)> {
+    pub fn get_selected_text(&self) -> String {
+        self.selected_lines
+            .iter()
+            .map(|idx| self.lines[*idx].clone())
+            .collect::<Vec<String>>()
+            .join("\n")
+    }
+
+    pub fn get_filtered_lines(&mut self, pattern: &String) -> &Vec<(String, u32)> {
         if self.is_dirty {
             if pattern.is_empty() {
-                self.filtered_lines = self.lines
+                self.filtered_lines = self
+                    .lines
                     .iter()
                     .enumerate()
-                    .map(|(idx,line)| (line.clone(), idx as u32)).collect();
+                    .map(|(idx, line)| (line.clone(), idx as u32))
+                    .collect();
             } else {
-                self.filtered_lines = self.lines
+                self.filtered_lines = self
+                    .lines
                     .iter()
                     .enumerate()
-                    .map(|(idx,line)| (line.clone(), idx as u32))
-                    .filter(|(line,_)| line.contains(pattern))
+                    .map(|(idx, line)| (line.clone(), idx as u32))
+                    .filter(|(line, _)| line.contains(pattern))
                     .collect();
             }
         }

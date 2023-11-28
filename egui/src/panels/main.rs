@@ -1,3 +1,4 @@
+use clipboard::{ClipboardContext, ClipboardProvider};
 use egui::{CentralPanel, Color32, Context, FontId, Label, Sense, TextFormat};
 use egui::text::{LayoutJob, LayoutSection};
 use regex::Regex;
@@ -37,7 +38,18 @@ impl MainPanel {
     }
 
     pub fn draw(&mut self, session: &mut Session, ctx: &Context, log_contents: &mut LinesState,
-    filter_text: &String, search_pattern: &Option<Regex>) {
+        filter_text: &String, search_pattern: &Option<Regex>) {
+        ctx.input(|i| {
+            if i.key_pressed(egui::Key::C) && (i.modifiers.command || i.modifiers.ctrl) {
+                if let Ok(ctx) = ClipboardProvider::new() {
+                    let mut ctxx: ClipboardContext = ctx;
+                    if ctxx.set_contents(log_contents.get_selected_text()).is_err() {
+                        log::error!("Failed to copy to clipboard");
+                    }
+                }
+            }
+        });
+
         let frame = egui::containers::Frame {
             inner_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
             outer_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },

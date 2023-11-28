@@ -1,29 +1,32 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-mod windows;
+mod highlight;
+mod lines;
 mod panels;
 mod session;
-mod highlight;
 mod widgets;
-mod lines;
+mod windows;
 
 use app_dirs2::*; // or app_dirs::* if you've used package alias in Cargo.toml
 
-const APP_INFO: AppInfo = AppInfo{name: "Tailor", author: "Alexander Devaikin"};
+const APP_INFO: AppInfo = AppInfo {
+    name: "Tailor",
+    author: "Alexander Devaikin",
+};
 
-use tailor::{Tailor, Message};
-use windows::Windows;
-use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
-use std::sync::mpsc::channel;
-use eframe::{App, egui, Frame};
-use egui::{Context, TopBottomPanel, TextEdit, Button, Layout, Align};
-use egui_file::FileDialog;
-use regex::Regex;
 use crate::lines::LinesState;
 use crate::panels::main::MainPanel;
 use crate::session::Session;
 use crate::widgets::recents::RecentsBox;
+use eframe::{egui, App, Frame};
+use egui::{Align, Button, Context, Layout, TextEdit, TopBottomPanel};
+use egui_file::FileDialog;
+use regex::Regex;
+use std::path::{Path, PathBuf};
+use std::sync::mpsc::channel;
+use std::sync::{Arc, Mutex};
+use tailor::{Message, Tailor};
+use windows::Windows;
 
 struct TailorClient {
     #[allow(dead_code)]
@@ -31,7 +34,12 @@ struct TailorClient {
 }
 
 impl TailorClient {
-    fn new(tailor: &mut Tailor, path: &PathBuf, ctx: Context, log_contents: Arc<Mutex<LinesState>>) -> Self {
+    fn new(
+        tailor: &mut Tailor,
+        path: &Path,
+        ctx: Context,
+        log_contents: Arc<Mutex<LinesState>>,
+    ) -> Self {
         let (message_tx, message_rx) = channel();
         let client_handle = std::thread::spawn(move || {
             while match message_rx.recv_timeout(std::time::Duration::from_secs(2)) {
@@ -40,7 +48,7 @@ impl TailorClient {
                         match msg {
                             Message::NewLines(recv_lines) => {
                                 (*lines).add_lines(recv_lines);
-                            },
+                            }
                             Message::NewFile(_path) => {
                                 (*lines).clear_lines();
                             }
@@ -49,10 +57,8 @@ impl TailorClient {
 
                     ctx.request_repaint();
                     true
-                },
-                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
-                    true
-                },
+                }
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => true,
                 Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
                     log::error!("Tailor thread disconnected");
                     false
@@ -60,7 +66,7 @@ impl TailorClient {
             } {}
         });
 
-        tailor.watch(path.clone(), message_tx);
+        tailor.watch(PathBuf::from(path), message_tx);
 
         Self {
             handle: client_handle,
@@ -108,23 +114,23 @@ impl TailorApp {
 
 impl App for TailorApp {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-            if self.is_dirty {
-                if let Some(path) = &self.next_open_file {
-                    if let Ok(mut lines) = self.log_contents.lock() {
-                        (*lines).clear_lines();
-                    }
-                    self.tailor_client = Some(TailorClient::new(
-                        &mut self.tailor,
-                        path,
-                        ctx.clone(),
-                        self.log_contents.clone(),
-                    ));
-                    self.session = Session::new(path.clone());
-                    self.recents_box.update_recents(path.as_path());
+        if self.is_dirty {
+            if let Some(path) = &self.next_open_file {
+                if let Ok(mut lines) = self.log_contents.lock() {
+                    (*lines).clear_lines();
                 }
-
-                self.is_dirty = false;
+                self.tailor_client = Some(TailorClient::new(
+                    &mut self.tailor,
+                    path,
+                    ctx.clone(),
+                    self.log_contents.clone(),
+                ));
+                self.session = Session::new(path.clone());
+                self.recents_box.update_recents(path.as_path());
             }
+
+            self.is_dirty = false;
+        }
 
         if self.recents_box.is_dirty(self.session.get_path().as_path()) {
             self.next_open_file = Some(self.recents_box.get_selected_recent_path());
@@ -149,16 +155,16 @@ impl App for TailorApp {
 
                 ui.horizontal(|ui| {
                     self.recents_box.draw(ui);
-                    let session_settings_button = Button::new("🎨")
-                        .selected(self.settings_panel.get_is_visible());
+                    let session_settings_button =
+                        Button::new("🎨").selected(self.settings_panel.get_is_visible());
                     if ui.add(session_settings_button).clicked() {
                         self.settings_panel.toggle_is_visible();
                     }
                 });
 
                 ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                    let about_button = Button::new("About")
-                        .selected(self.windows.about.get_is_visible());
+                    let about_button =
+                        Button::new("About").selected(self.windows.about.get_is_visible());
                     if ui.add(about_button).clicked() {
                         self.windows.about.toggle_is_visible();
                     }
@@ -176,7 +182,13 @@ impl App for TailorApp {
         });
 
         if let Ok(mut log_contents) = self.log_contents.lock() {
-            self.log_panel.draw(&mut self.session, ctx, &mut log_contents, &self.filter_text, &self.search_regex);
+            self.log_panel.draw(
+                &mut self.session,
+                ctx,
+                &mut log_contents,
+                &self.filter_text,
+                &self.search_regex,
+            );
         }
         self.settings_panel.draw(ctx, &mut self.session);
         self.windows.draw(ctx);
@@ -188,18 +200,29 @@ impl App for TailorApp {
                 });
 
                 ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                    if ui.add(TextEdit::singleline(&mut self.search_text)
-                        .hint_text("Search").desired_width(120.0))
-                        .changed() {
+                    if ui
+                        .add(
+                            TextEdit::singleline(&mut self.search_text)
+                                .hint_text("Search")
+                                .desired_width(120.0),
+                        )
+                        .changed()
+                    {
                         if !self.search_text.is_empty() {
-                            if let Ok(regex) = Regex::new(format!(r"(?i){}", &self.search_text).as_str()) {
+                            if let Ok(regex) =
+                                Regex::new(format!(r"(?i){}", &self.search_text).as_str())
+                            {
                                 self.search_regex = Some(regex);
                             }
                         } else {
                             self.search_regex = None;
                         }
                     }
-                    ui.add(TextEdit::singleline(&mut self.filter_text).hint_text("Filter").desired_width(120.0));
+                    ui.add(
+                        TextEdit::singleline(&mut self.filter_text)
+                            .hint_text("Filter")
+                            .desired_width(120.0),
+                    );
                 });
             });
         });
@@ -209,7 +232,10 @@ impl App for TailorApp {
 fn init_data_path() {
     if let Ok(data_path) = get_app_root(AppDataType::UserData, &APP_INFO) {
         if !data_path.exists() && std::fs::create_dir_all(&data_path).is_err() {
-            log::warn!("Unable to create data path: {:?}. Settings and sessions will not be persisted.", data_path);
+            log::warn!(
+                "Unable to create data path: {:?}. Settings and sessions will not be persisted.",
+                data_path
+            );
         }
     }
 }
@@ -240,9 +266,8 @@ fn main() {
                 eframe::NativeOptions::default(),
                 Box::new(|_cc| Box::new(TailorApp::new(tailor))),
             );
-        },
-        Err(msg) => 
-        {
+        }
+        Err(msg) => {
             println!("Failed to create Tailor instance:");
             println!("{}", msg);
         }
