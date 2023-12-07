@@ -118,11 +118,11 @@ impl MainPanel {
                                .clicked() {
                                let modifiers = ui.input(|i| i.modifiers);
                                if modifiers.ctrl || modifiers.command {
-                                   log_contents.toggle_add_selection(row);
+                                   log_contents.toggle_add_selection(filtered_lines[row].1 as usize);
                                } else if modifiers.shift {
-                                   log_contents.toggle_add_range_selection(row);
+                                   log_contents.toggle_add_range_selection(filtered_lines[row].1 as usize);
                                } else {
-                                   log_contents.toggle_single_line_selection(row);
+                                   log_contents.toggle_single_line_selection(filtered_lines[row].1 as usize);
                                }
                            }
                        }
