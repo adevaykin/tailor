@@ -20,10 +20,9 @@ use crate::session::Session;
 use crate::widgets::recents::RecentsBox;
 use eframe::{egui, App, Frame};
 use egui::{Align, Button, Context, Layout, TextEdit, TopBottomPanel};
-use egui_file::FileDialog;
 use regex::Regex;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::channel;
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use tailor::{Message, Tailor};
 use windows::Windows;
@@ -77,8 +76,8 @@ impl TailorClient {
 struct TailorApp {
     windows: Windows,
     session: Session,
+    file_pick_channel: (Sender<PathBuf>, Receiver<PathBuf>),
     is_dirty: bool,
-    open_file_dialog: Option<FileDialog>,
     recents_box: RecentsBox,
     next_open_file: Option<PathBuf>,
     tailor: Tailor,
@@ -96,8 +95,8 @@ impl TailorApp {
         Self {
             windows: Windows::default(),
             session: Session::default(),
+            file_pick_channel: channel(),
             is_dirty: true,
-            open_file_dialog: None,
             recents_box: RecentsBox::default(),
             next_open_file: None,
             tailor,
@@ -114,6 +113,11 @@ impl TailorApp {
 
 impl App for TailorApp {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+        if let Ok(path) = self.file_pick_channel.1.try_recv() {
+            self.next_open_file = Some(path);
+            self.is_dirty = true;
+        }
+
         if self.is_dirty {
             if let Some(path) = &self.next_open_file {
                 if let Ok(mut lines) = self.log_contents.lock() {
@@ -142,14 +146,24 @@ impl App for TailorApp {
                 ui.horizontal(|ui| {
                     ui.label("Open");
                     if (ui.button("📃 File")).clicked() {
-                        let mut dialog = FileDialog::open_file(Some(PathBuf::from("../")));
-                        dialog.open();
-                        self.open_file_dialog = Some(dialog);
+                        let sender = self.file_pick_channel.0.clone();
+                        let task = rfd::AsyncFileDialog::new().pick_file();
+                        std::thread::spawn(move || futures::executor::block_on(async move {
+                            let file = task.await;
+                            if let Some(file) = file {
+                                sender.send(file.path().to_path_buf()).unwrap();
+                            }
+                        }));
                     }
                     if (ui.button("📂 Folder")).clicked() {
-                        let mut dialog = FileDialog::select_folder(Some(PathBuf::from("../")));
-                        dialog.open();
-                        self.open_file_dialog = Some(dialog);
+                        let sender = self.file_pick_channel.0.clone();
+                        let task = rfd::AsyncFileDialog::new().pick_folder();
+                        std::thread::spawn(move || futures::executor::block_on(async move {
+                            let file = task.await;
+                            if let Some(file) = file {
+                                sender.send(file.path().to_path_buf()).unwrap();
+                            }
+                        }));
                     }
                 });
 
@@ -170,15 +184,6 @@ impl App for TailorApp {
                     }
                 });
             });
-
-            if let Some(dialog) = &mut self.open_file_dialog {
-                if dialog.show(ctx).selected() {
-                    if let Some(file) = dialog.path() {
-                        self.next_open_file = Some(PathBuf::from(file));
-                        self.is_dirty = true;
-                    }
-                }
-            }
         });
 
         if let Ok(mut log_contents) = self.log_contents.lock() {
@@ -261,9 +266,10 @@ fn main() {
 
     match Tailor::new() {
         Ok(tailor) => {
+            let native_options = eframe::NativeOptions::default();
             let _ = eframe::run_native(
                 "Tailor",
-                eframe::NativeOptions::default(),
+                native_options,
                 Box::new(|_cc| Box::new(TailorApp::new(tailor))),
             );
         }
