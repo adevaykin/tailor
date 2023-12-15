@@ -145,7 +145,9 @@ impl App for TailorApp {
             ui.horizontal(|ui| {
                 ui.horizontal(|ui| {
                     ui.label("Open");
-                    if (ui.button("📃 File")).clicked() {
+                    if ui.button("📃 File")
+                        .on_hover_text("Pick single file to follow")
+                        .clicked() {
                         let sender = self.file_pick_channel.0.clone();
                         let task = rfd::AsyncFileDialog::new().pick_file();
                         std::thread::spawn(move || futures::executor::block_on(async move {
@@ -155,7 +157,9 @@ impl App for TailorApp {
                             }
                         }));
                     }
-                    if (ui.button("📂 Folder")).clicked() {
+                    if ui.button("📂 Folder")
+                        .on_hover_text("Pick folder with files to follow")
+                        .clicked() {
                         let sender = self.file_pick_channel.0.clone();
                         let task = rfd::AsyncFileDialog::new().pick_folder();
                         std::thread::spawn(move || futures::executor::block_on(async move {
@@ -171,7 +175,14 @@ impl App for TailorApp {
                     self.recents_box.draw(ui);
                     let session_settings_button =
                         Button::new("🎨").selected(self.settings_panel.get_is_visible());
-                    if ui.add(session_settings_button).clicked() {
+                    if ui.button("☜")
+                        .on_hover_text("Reveal in file manager")
+                        .clicked() {
+                        let _ = open::that(self.session.get_path());
+                    }
+                    if ui.add(session_settings_button)
+                        .on_hover_text("Session settings")
+                        .clicked() {
                         self.settings_panel.toggle_is_visible();
                     }
                 });
