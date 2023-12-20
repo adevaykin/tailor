@@ -126,7 +126,8 @@ impl MainPanel {
                                }
                            }
                        }
-                       ui.add(Label::new(""));
+                    ui.add(Label::new(""));
+                    ui.add(Label::new(""));
                });
         });
     }
